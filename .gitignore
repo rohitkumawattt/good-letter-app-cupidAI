@@ -1,0 +1,33 @@
+# ========= NODE =========
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ========= ENV =========
+.env
+.env.local
+.env.development
+.env.production
+
+# ========= FRONTEND (React / Vite) =========
+dist/
+build/
+.vite/
+
+# ========= BACKEND =========
+coverage/
+logs/
+*.log
+
+# ========= OS =========
+.DS_Store
+Thumbs.db
+
+# ========= IDE =========
+.vscode/
+.idea/
+
+# ========= AI / SECRET FILES =========
+*.pem
+*.key
