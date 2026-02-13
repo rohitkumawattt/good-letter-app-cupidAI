@@ -9,7 +9,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
 
 // --- Frontend Configurations ---
-const API_BASE_URL = import.meta.env.VITE_API_URI; // Deployed URL yahan ayega
+const API_BASE_URL =
+  window.location.hostname === "localhost"
+    ? "http://localhost:5000"
+    : "https://cupid-ai-server.vercel.app";
 
 const Letter = ({ loading, setLoading }) => {
   const [letter, setLetter] = useState("");
