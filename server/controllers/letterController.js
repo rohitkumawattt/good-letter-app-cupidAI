@@ -4,16 +4,17 @@ import Letter from '../models/Letter.js';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const generateLetter = async (req, res) => {
   try {
+    // The message MUST be written ONLY in Hinglish (Hindi written in English letters).
+// No pure English lines are allowed.
     await autoCleanup();
-    const prompt = `Write a very romantic, heart-touching Valentine's Day love letter.
-The message MUST be written ONLY in Hinglish (Hindi written in English letters).
-No pure English lines are allowed.
+    const prompt = `Write a very romantic, heart-touching Valentine's Day love letter in simple love English.
+
 
 Tone: extremely romantic, emotional, soft, and cute.
 Style: poetic, sweet, and full of love.
 Content should feel personal, warm, and dreamy — like a true love confession.
 
-Length: 2 short paragraphs only.
+Length: A paragraph of 150 letters only.
 include emojis in the message.
 Make it sound natural, not robotic.`;
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
