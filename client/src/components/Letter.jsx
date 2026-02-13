@@ -12,7 +12,7 @@ import axios from "axios";
 const API_BASE_URL =
   window.location.hostname === "localhost"
     ? "http://localhost:5000"
-    : "https://cupid-ai-server.vercel.app";
+    : "https://cupid-ai-xnpm.onrender.com";
 
 const Letter = ({ loading, setLoading }) => {
   const [letter, setLetter] = useState("");
