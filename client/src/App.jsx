@@ -34,9 +34,12 @@ const App = () => {
       >
         <header className="text-center mb-6">
           <motion.h1
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
             className="text-4xl font-bold text-white drop-shadow-lg"
           >
-            Love Letter AI 💌
+            CupidAI 💌
           </motion.h1>
           <p className="text-rose-100 mt-2">A good message for your ❤️ one.</p>
         </header>
@@ -51,7 +54,7 @@ const App = () => {
         <footer className="mt-8 text-center text-rose-100 text-sm">
           Built with ❤️ for your's loved ones.
           <br />
-          © 2026 AI Love Letter. All rights reserved.
+          © 2026 CupidAI. All rights reserved.
         </footer>
       </motion.div>
     </div>
