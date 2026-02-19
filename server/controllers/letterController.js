@@ -1,22 +1,83 @@
 import 'dotenv/config';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import Letter from '../models/Letter.js';
+import Letter from '../models/Letter.model.js';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const generateLetter = async (req, res) => {
-  try {
-    // The message MUST be written ONLY in Hinglish (Hindi written in English letters).
-// No pure English lines are allowed.
-    await autoCleanup();
-    const prompt = `Write a very romantic, heart-touching Valentine's Day love letter in simple love English.
 
-
+const categoryPrompt = {
+  valentine: `Write a very romantic, heart-touching Valentine's Day love letter in simple love English.
 Tone: extremely romantic, emotional, soft, and cute.
 Style: poetic, sweet, and full of love.
 Content should feel personal, warm, and dreamy — like a true love confession.
+Length: Around 120-150 letters only.
+Include emojis naturally in the message.
+Make it sound natural and not robotic.`,
 
-Length: A paragraph of 150 letters only.
-include emojis in the message.
-Make it sound natural, not robotic.`;
+  birthday: `Write a joyful, sweet, and celebratory Birthday message for my partner.
+Tone: happy, loving, and emotionally warm.
+Style: sweet, caring, and expressive.
+Content should feel personal and full of gratitude and love.
+Length: Around 120-150 letters only.
+Include cute and loving emojis naturally.
+Make it sound genuine and human-like.`,
+
+  anniversary: `Write an emotional and deep anniversary wish celebrating our years of togetherness.
+Tone: romantic, nostalgic, and heartfelt.
+Style: poetic yet simple and meaningful.
+Content should express love, memories, gratitude, and commitment.
+Length: Around 120-150 letters only.
+Include meaningful romantic emojis.
+Make it sound natural and deeply emotional, not robotic.`,
+
+  flirty: `Write a playful, charming, and cheeky flirty message.
+Tone: fun, teasing, confident, and cute.
+Style: light, attractive, and engaging.
+Content should make the reader smile and feel special.
+Length: Around 100-130 letters only.
+Include playful emojis naturally.
+Make it sound spontaneous and natural.`,
+
+  sorry: `Write a sincere, humble, and heart-melting apology message.
+Tone: emotional, regretful, and deeply honest.
+Style: soft, caring, and genuine.
+Content should express true regret and the desire to fix things.
+Length: Around 120-150 letters only.
+Include soft emotional emojis.
+Make it sound real and heartfelt, not forced.`,
+
+  longdistance: `Write an emotional and longing message for my partner who is far away.
+Tone: loving, missing, and deeply emotional.
+Style: poetic yet simple and touching.
+Content should express how much I miss them and value our bond.
+Length: Around 120-150 letters only.
+Include emotional and love-filled emojis.
+Make it feel personal and warm.`,
+
+  daily: `Write a sweet and warm Good Morning or Good Night message.
+Tone: soft, caring, and loving.
+Style: simple, cute, and heart-touching.
+Content should make the person feel special and loved.
+Length: Around 80-120 letters only.
+Include sweet emojis naturally.
+Make it sound natural and comforting.`,
+
+  healing: `Write a comforting and supportive message for someone going through a tough time or heartbreak.
+Tone: gentle, understanding, and emotionally supportive.
+Style: warm, reassuring, and heartfelt.
+Content should provide hope, strength, and emotional comfort.
+Length: Around 120-150 letters only.
+Include soft supportive emojis.
+Make it sound compassionate and human-like.`
+};
+
+
+const generateLetter = async (req, res) => {
+  const { category } = req.body;
+  if (!category || !categoryPrompt[category]) {
+    return res.status(400).json({ success: false, message: 'Invalid category' });
+  }
+  try {
+    await autoCleanup();
+    const prompt = categoryPrompt[category];
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -25,6 +86,7 @@ Make it sound natural, not robotic.`;
     const letter = new Letter({
       content: text,
       generatedBy: 'ai',
+      category: category,
     });
     await letter.save();
 
@@ -45,8 +107,12 @@ Make it sound natural, not robotic.`;
 };
 
 const getRandomLetter = async (req, res) => {
+  const { category } = req.query;
+  if (!category || !categoryPrompt[category]) {
+    return res.status(400).json({ success: false, message: 'Invalid category', category: category });
+  }
   try {
-    const letter = await getRandomLetterFallback();
+    const letter = await getRandomLetterFallback({ category });
     if (letter) {
       return res.status(200).json({
         success: true,
@@ -54,19 +120,25 @@ const getRandomLetter = async (req, res) => {
         letter: letter,
       });
     } else {
-      return res.status(404).json({ success: false, message: 'No letters found' });
+      return res.status(404).json({
+        success: false,
+        message: 'No letters found'
+      });
     }
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 };
 
 // Helper: Fetch random letter from DB
-const getRandomLetterFallback = async () => {
-  const count = await Letter.countDocuments();
+const getRandomLetterFallback = async ({ category }) => {
+  const count = await Letter.countDocuments({ category });
   if (count === 0) return null;
   const random = Math.floor(Math.random() * count);
-  const letter = await Letter.findOne().skip(random);
+  const letter = await Letter.findOne({ category }).skip(random);
   return letter;
 };
 

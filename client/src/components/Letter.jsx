@@ -1,182 +1,148 @@
-import React, { useEffect, useState } from "react";
-import {
-  Heart,
-  RefreshCw,
-  Copy,
-  Palette,
-} from "lucide-react";
+import React, { useState } from "react";
+import { RefreshCw, Copy, CheckCircle2, Sparkle, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
-
-// --- Frontend Configurations ---
-const API_BASE_URL =
-  window.location.hostname === "localhost"
-    ? "http://localhost:5000"
-    : "https://cupid-ai-server.vercel.app";
-
-const Letter = ({ loading, setLoading }) => {
-  const [letter, setLetter] = useState("");
-  // const [limit, setLimit] = useState(5);
-  const [cardColor, setCardColor] = useState("bg-pink-50");
+const Letter = ({
+  loading,
+  letter,
+  error,
+  theme,
+  selectedCategory,
+  darkMode,
+  fetchLetter,
+}) => {
   const [copied, setCopied] = useState(false);
-  const [error, setError] = useState("");
 
-  // fetching msg from backend
-  const fetchNewLetter = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      // API call to backend
-      const response = await axios.post(`${API_BASE_URL}/api/letters/generate`);
-      if (response.data.success) {
-        console.log("RESPONSE GET SUCCESSFULLY!");
-        // console.log("RESPONSE MSG : ", response.data.letter.content);
-        setLetter(response.data.letter.content);
-        setLoading(false);
-      }else {
-        throw new Error("AI Generation failed");
-      }
-    } catch (err) {
-      if (err.response && err.response.status === 429) {
-        setError("Aaj ki limit puri ho chuki hai!😟. New limit 12:00 AM per renew hogi ⌚. per aap dusro k likhe hue letter ko use kar skte hai 😊.Thank You 💕");
-      }
-      // console.log("AI Generation Error, fetching from Database backup...");
-      try {
-        // 2. Agar POST fail hua, toh GET request bhejo DB se random letter lene ke liye
-        const backupResponse = await axios.get(`${API_BASE_URL}/api/letters`);
-        if (backupResponse.data.success) {
-          setLetter(backupResponse.data.letter.content);
-          // User ko pata chale ki ye backup hai (Optional)
-          // console.log("Loaded from DB backup successfully");
-        } else {
-          setLetter("Sabse pyare tum 💕. (Fallback)");
-        }
-      } catch (backupErr) {
-        console.error("Backup fetch also failed:", backupErr);
-        setError("Network slow hai, par mera pyaar nahi! ❤️");
-        setLetter("Dil se dil tak ki baat, hamesha rahegi yaad.");
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
   // copy to clipboard function
   const copyToClipboard = () => {
     navigator.clipboard.writeText(letter);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-  // color set
-  const colors = [
-    "bg-pink-50",
-    "bg-red-50",
-    "bg-purple-50",
-    "bg-rose-100",
-    "bg-white",
-    "bg-amber-50",
-  ];
-
-  useEffect(() => {
-    fetchNewLetter();
-  }, []);
   return (
-    <div
-      className={`relative rounded-3xl shadow-2xl overflow-hidden transition-colors duration-500 ${cardColor} border-4 border-white`}
+    <motion.div
+      className={`relative rounded-[3rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.2)] overflow-hidden border-4 backdrop-blur-3xl transition-all duration-700 ${theme.card}`}
     >
-      {/* Heartbeat Loader */}
-      <AnimatePresence>
-        {loading && (
+      {/* Card Top Strip */}
+      <div
+        className="absolute top-0 left-0 right-0 h-2"
+        style={{ backgroundColor: theme.accentColor }}
+      />
+      <div className="px-10 pt-10 flex justify-between items-center">
+        <div className="flex flex-col">
+          <span
+            className={`text-[10px] font-black uppercase tracking-[0.3em] ${darkMode ? "text-slate-600" : "text-slate-400"}`}
+          >
+            Crafting for
+          </span>
+          <span
+            className="text-lg font-black capitalize flex items-center gap-2"
+            style={{ color: theme.accentColor }}
+          >
+            {selectedCategory.label}
+            <Sparkle size={18} />
+          </span>
+        </div>
+
+        <button
+          onClick={copyToClipboard}
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-black transition-all transform active:scale-95 ${
+            copied
+              ? "bg-green-500 text-white shadow-lg shadow-green-500/30"
+              : darkMode
+                ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+          }`}
+        >
+          {copied ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+
+      {/* letter content */}
+      <div className="p-5 min-h-[360px] flex flex-col justify-center relative">
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loader"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              className="absolute inset-0 flex flex-col items-center justify-center z-20"
+            >
+              {/* Heart Beat Animation */}
+              <motion.div
+                animate={{
+                  scale: [1, 1.2, 1],
+                  filter: [
+                    "drop-shadow(0 0 0px transparent)",
+                    `drop-shadow(0 0 20px ${theme.accentColor}66)`,
+                    "drop-shadow(0 0 0px transparent)",
+                  ],
+                }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 0.8,
+                  ease: "easeInOut",
+                }}
+                style={{ color: theme.accentColor }}
+              >
+                <Heart size={100} fill="currentColor" strokeWidth={1} />
+              </motion.div>
+              <p
+                className={`mt-10 font-black tracking-widest text-[10px] uppercase ${darkMode ? "text-slate-600" : "text-slate-400"}`}
+              >
+                Soch rha hu 🤔...
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div
+              key={letter}
+              initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex flex-col items-center text-center"
+            >
+              <p
+                className={`text-2xl md:text-3xl font-serif leading-relaxed italic ${theme.text}`}
+              >
+                "{letter || "Aapke liye kuch pyaara sa generate kar raha hu..."}
+                "
+              </p>
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.5, duration: 1 }}
+                className="mt-5 w-16 h-1 rounded-full opacity-20"
+                style={{ backgroundColor: darkMode ? "#fff" : "#334155" }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* error msg and button */}
+      <div className="px-10 pb-10">
+        {error && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm"
+            className="mb-5 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-2xl text-center font-bold"
           >
-            <motion.div
-              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-              transition={{ duration: 0.8, repeat: Infinity }}
-              className="text-rose-500 mb-4"
-            >
-              <Heart size={80} fill="currentColor" />
-            </motion.div>
-            <p className="text-rose-600 font-medium animate-pulse">
-              Soch rha hu 🤔. Plz wait 🫠 ...
-            </p>
+            {error}
           </motion.div>
         )}
-      </AnimatePresence>
 
-      {/* Letter Body */}
-      <div className="p-8 min-h-[350px] flex flex-col">
-        <div className="flex justify-between items-center mb-6">
-          <span className="text-xs font-bold uppercase tracking-widest text-rose-400">
-            Valentine Special
-          </span>
-          <div className="flex gap-2">
-            <button
-              onClick={() =>
-                setCardColor(
-                  colors[(colors.indexOf(cardColor) + 1) % colors.length],
-                )
-              }
-              className="p-2 hover:bg-rose-100 rounded-full transition-colors text-rose-500"
-              title="Change Color"
-            >
-              <Palette size={20} />
-            </button>
-            <button
-              onClick={copyToClipboard}
-              className="p-2 hover:bg-rose-100 rounded-full transition-colors text-rose-500"
-              title="Copy Text"
-            >
-              {copied ? (
-                <span className="text-xs font-bold">Copied!</span>
-              ) : (
-                <Copy size={20} />
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex-grow">
-          <motion.p
-            key={letter}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-gray-800 text-lg leading-relaxed italic font-serif text-center whitespace-pre-wrap"
-          >
-            "{letter || "Loading magic..."}"
-          </motion.p>
-        </div>
-
-        {error && (
-          <p className="text-red-500 text-center text-sm mt-4 bg-red-50 p-2 rounded-lg border border-red-100">
-            {error}
-          </p>
-        )}
-
-        <div className="mt-8 flex flex-col items-center gap-4">
-          <button
-            onClick={() => fetchNewLetter()}
-            disabled={loading}
-            className={`w-full py-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-white shadow-lg transition-all active:scale-95 bg-rose-500 hover:bg-rose-600`}
-            // ${
-            //   limit <= 0
-            //     ? "bg-gray-400 cursor-not-allowed"
-            //     : "bg-rose-500 hover:bg-rose-600"
-            // }
-          >
-            <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
-            Agla Letter Likho
-          </button>
-
-          {/* <div className="flex items-center gap-2 text-rose-400 text-sm font-medium">
-            <Info size={14} />
-            Aaj ke bache hue chances: {limit} / 5
-          </div> */}
-        </div>
+        <button
+          onClick={() => fetchLetter()}
+          disabled={loading}
+          className={`w-full py-5 rounded-[2.2rem] flex items-center justify-center gap-4 font-black text-lg text-white shadow-2xl transition-all transform active:scale-[0.98] disabled:opacity-50`}
+          style={{ backgroundColor: theme.accentColor }}
+        >
+          <RefreshCw size={22} className={loading ? "animate-spin" : ""} />
+          Generate Magic
+        </button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

@@ -12,7 +12,7 @@ connectDB();
 const app = express();
 
 const corsOptions = {
-  origin: ['http://localhost:5173',"https://cupid-ai-dun.vercel.app"],
+  origin: ['http://localhost:5173',"https://cupid-ai-xsy1.onrender.com"],
   methods: ['GET', 'POST'],
 };
 app.use(cors(corsOptions));

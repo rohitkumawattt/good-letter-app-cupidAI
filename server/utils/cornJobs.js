@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import Letter from '../models/Letter.js';
+import Letter from '../models/Letter.model.js';
 
 export const initCronJobs = () => {
   // Yeh har 5 din mein ek baar chalega (Raat ke 12:00 baje)

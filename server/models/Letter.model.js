@@ -15,6 +15,11 @@ const letterSchema = mongoose.Schema(
       enum: ['ai', 'fallback'],
       default: 'ai',
     },
+    category: {
+      type: String,
+      enum: ['valentine', 'birthday', 'anniversary','flirty','sorry', 'longdistance','daily','healing'],
+      default: 'valentine',
+    },
   },
   {
     timestamps: true,
