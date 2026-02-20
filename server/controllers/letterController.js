@@ -71,13 +71,13 @@ Make it sound compassionate and human-like.`
 
 
 const generateLetter = async (req, res) => {
-  const { category } = req.body;
+  const { category, language } = req.body;
   if (!category || !categoryPrompt[category]) {
     return res.status(400).json({ success: false, message: 'Invalid category' });
   }
   try {
     await autoCleanup();
-    const prompt = categoryPrompt[category];
+    const prompt = categoryPrompt[category] + `\nLanguage: ${language}`;
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -87,6 +87,7 @@ const generateLetter = async (req, res) => {
       content: text,
       generatedBy: 'ai',
       category: category,
+      language: language
     });
     await letter.save();
 
@@ -106,13 +107,13 @@ const generateLetter = async (req, res) => {
   }
 };
 
-const getRandomLetter = async (req, res) => {
-  const { category } = req.query;
+const getRandomLetterByCategoryAndLanguage = async (req, res) => {
+  const { category, language } = req.query;
   if (!category || !categoryPrompt[category]) {
     return res.status(400).json({ success: false, message: 'Invalid category', category: category });
   }
   try {
-    const letter = await getRandomLetterFallback({ category });
+    const letter = await getRandomLetterByCategoryAndLanguageFallback({ category, language });
     if (letter) {
       return res.status(200).json({
         success: true,
@@ -133,12 +134,46 @@ const getRandomLetter = async (req, res) => {
   }
 };
 
+// default letter 
+
+const getDefaultLetter = async (req, res) => {
+  try {
+    const defaultLetter = await getDefaultLetterFallback();
+    if (defaultLetter) {
+      return res.status(200).json({
+        success: true,
+        message: 'Default Letter fetched successfully',
+        letter: defaultLetter,
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        message: 'No default letter found'
+      });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+}
+
 // Helper: Fetch random letter from DB
-const getRandomLetterFallback = async ({ category }) => {
-  const count = await Letter.countDocuments({ category });
+const getRandomLetterByCategoryAndLanguageFallback = async ({ category, language }) => {
+  const count = await Letter.countDocuments({ category, language });
   if (count === 0) return null;
   const random = Math.floor(Math.random() * count);
-  const letter = await Letter.findOne({ category }).skip(random);
+  const letter = await Letter.findOne({ category, language }).skip(random);
+  return letter;
+};
+
+
+const getDefaultLetterFallback = async () => {
+  const count = await Letter.countDocuments();
+  if (count === 0) return null;
+  const random = Math.floor(Math.random() * count);
+  const letter = await Letter.findOne().skip(random);
   return letter;
 };
 
@@ -167,5 +202,6 @@ const autoCleanup = async () => {
 
 export {
   generateLetter,
-  getRandomLetter,
+  getRandomLetterByCategoryAndLanguage,
+  getDefaultLetter
 };

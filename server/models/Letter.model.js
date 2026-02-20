@@ -20,6 +20,10 @@ const letterSchema = mongoose.Schema(
       enum: ['valentine', 'birthday', 'anniversary','flirty','sorry', 'longdistance','daily','healing'],
       default: 'valentine',
     },
+    language: {
+      type: String,
+      default: "English"
+    }
   },
   {
     timestamps: true,

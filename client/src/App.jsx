@@ -5,18 +5,16 @@ import {
   Cake,
   Stars,
   Sparkles,
-  MessageCircleHeart,
-  RefreshCw,
-  Copy,
   Sun,
   Moon,
   CloudMoon,
   Plane,
   Frown,
   HeartOff,
-  Send,
-  CheckCircle2,
-  Sparkle,
+  Globe,
+  Search,
+  ChevronDown ,
+  
 } from "lucide-react";
 import Letter from "./components/Letter";
 import axios from "axios";
@@ -34,6 +32,40 @@ const colorMap = {
   teal: { hex: "#14b8a6", lightBg: "#f0fdfa" },
   slate: { hex: "#64748b", lightBg: "#f8fafc" },
 };
+
+const languages = [
+  "Hinglish",
+  "Hindi",
+  "English",
+  "Bengali",
+  "Marathi",
+  "Telugu",
+  "Tamil",
+  "Gujarati",
+  "Urdu",
+  "Kannada",
+  "Odia",
+  "Malayalam",
+  "Punjabi",
+  "Assamese",
+  "Maithili",
+  "Sanskrit",
+  "Spanish",
+  "French",
+  "German",
+  "Japanese",
+  "Korean",
+  "Chinese",
+  "Arabic",
+  "Russian",
+  "Portuguese",
+  "Italian",
+  "Turkish",
+  "Vietnamese",
+  "Thai",
+  "Dutch",
+  "Greek",
+];
 
 const categories = [
   {
@@ -102,21 +134,29 @@ const API_BASE_URL =
 
 const App = () => {
   const [selectedCategory, setSelectedCategory] = useState(categories[0]);
+  const [selectedLanguage, setSelectedLanguage] = useState("English");
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const [langSearch, setLangSearch] = useState("");
   const [darkMode, setDarkMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [letter, setLetter] = useState("");
   const [error, setError] = useState("");
+  const [hoveredLang, setHoveredLang] = useState(null);
 
   const scrollRef = useRef(null);
+  const langRef = useRef(null);
 
-  const fetchLetter = async (category = selectedCategory.id) => {
+  const fetchLetter = async (
+    category = selectedCategory.id,
+    lang = selectedLanguage,
+  ) => {
     setLoading(true);
     setError("");
     try {
       // API call to backend
       const response = await axios.post(
         `${API_BASE_URL}/api/letters/generate`,
-        { category },
+        { category, language: lang },
       );
       if (response.data.success) {
         console.log("RESPONSE GET SUCCESSFULLY!");
@@ -134,20 +174,29 @@ const App = () => {
       // console.log("AI Generation Error, fetching from Database backup...");
       try {
         // 2. Agar POST fail hua, toh GET request bhejo DB se random letter lene ke liye
-        const backupResponse = await axios.get(`${API_BASE_URL}/api/letters`, {
-          params: { category },
-        });
+        const backupResponse = await axios.get(
+          `${API_BASE_URL}/api/letters/categoryAndLanguage`,
+          {
+            params: { category },
+          },
+        );
         if (backupResponse.data.success) {
           setLetter(backupResponse.data.letter.content);
           // User ko pata chale ki ye backup hai (Optional)
           // console.log("Loaded from DB backup successfully");
         } else {
-          setLetter("Sabse pyare tum 💕. (Fallback)");
+          throw new Error("Empty DB letter.");
         }
       } catch (backupErr) {
-        console.error("Backup fetch also failed:", backupErr);
-        setError("Network slow hai, par mera pyaar nahi! ❤️");
-        setLetter("Dil se dil tak ki baat, hamesha rahegi yaad.");
+        if (backupErr.response && backupErr.response.status === 404) {
+          setError("Network problem ho rhi h. Kuch bhi letters aa rhe h. Sorry.... 😟");
+        }
+        try {
+          const defaultLetter = await axios.get(`${API_BASE_URL}/api/letters/default`);
+          setLetter(defaultLetter.data.letter.content);
+        } catch (error) {
+          setError("main kho gaya hu 😟.");
+        }
       } finally {
         setLoading(false);
       }
@@ -156,6 +205,12 @@ const App = () => {
 
   useEffect(() => {
     fetchLetter();
+    const handleClickOutside = (e) => {
+      if (langRef.current && !langRef.current.contains(e.target))
+        setIsLangOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
   // Function to handle mouse wheel horizontal scrolling
   const handleWheel = (e) => {
@@ -165,11 +220,16 @@ const App = () => {
     }
   };
 
+  // filter the langauge while searching 
+  const filteredLangs = useMemo(() => {
+    return languages.filter(l => l.toLowerCase().includes(langSearch.toLowerCase()));
+  }, [langSearch]);
+
   const theme = useMemo(() => {
     const config = colorMap[selectedCategory.color];
     if (darkMode) {
       return {
-         bgStyle: { backgroundColor: '#020617' }, // slate-950
+        bgStyle: { backgroundColor: "#020617" }, // slate-950
         bg: "bg-slate-950",
         card: "bg-slate-900/90 border-slate-800",
         text: "text-slate-100",
@@ -270,16 +330,80 @@ const App = () => {
           </div>
         </motion.div>
 
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className={`p-4 rounded-2xl transition-all duration-500 transform active:scale-90 ${darkMode ? "bg-slate-800 text-yellow-400 border border-slate-700 shadow-2xl" : "bg-white text-slate-600 shadow-xl"}`}
-        >
-          {darkMode ? (
-            <Sun size={22} fill="currentColor" />
-          ) : (
-            <Moon size={22} fill="currentColor" />
-          )}
-        </button>
+        
+        <div className="flex gap-2">
+          {/* Enhanced Searchable Language Selector */}
+          <div className="relative" ref={langRef}>
+            <button 
+              onClick={() => setIsLangOpen(!isLangOpen)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-sm border ${darkMode ? 'bg-slate-900 text-slate-300 border-slate-800' : 'bg-white text-slate-600 border-white'}`}
+            >
+              <Globe size={14} style={{ color: theme.accentColor }} />
+              <span className="max-w-[80px] truncate">{selectedLanguage}</span>
+              <ChevronDown size={14} className={`transition-transform duration-300 ${isLangOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {isLangOpen && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className={`absolute right-0 mt-3 w-64 rounded-[2rem] shadow-2xl z-50 overflow-hidden border p-2 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}
+                >
+                  <div className="p-2 mb-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 text-slate-400" size={14} />
+                      <input 
+                        type="text" 
+                        placeholder="Search 30+ Languages..."
+                        className={`w-full pl-9 pr-4 py-3 text-xs rounded-2xl transition-all focus:outline-none focus:ring-2 ${darkMode ? 'bg-slate-800 text-white placeholder:text-slate-500' : 'bg-slate-50 text-slate-600 placeholder:text-slate-400'}`}
+                        style={{'--tw-ring-color': `${theme.accentColor}33`}}
+                        value={langSearch}
+                        onChange={(e) => setLangSearch(e.target.value)}
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto no-scrollbar pb-2">
+                    {filteredLangs.length > 0 ? filteredLangs.map(lang => {
+                      const isSelected = selectedLanguage === lang;
+                      const isHovered = hoveredLang === lang;
+                      return (
+                        <button 
+                        key={lang}
+                        onMouseEnter={() => setHoveredLang(lang)}
+                        onMouseLeave={() => setHoveredLang(null)}
+                        onClick={() => {
+                          setSelectedLanguage(lang);
+                          setIsLangOpen(false);
+                          setLangSearch("");
+                          fetchLetter(selectedCategory.id, lang);
+                        }}
+                        className={`w-full text-left px-5 py-3 text-xs font-bold transition-all rounded-xl mb-1 ${isSelected ? 'text-white shadow-lg' : darkMode ? 'text-slate-400' : 'text-slate-600'}`}
+                        style={{
+                            backgroundColor: isSelected ? theme.accentColor : (isHovered ? `${theme.accentColor}15` : 'transparent'),
+                            color: isSelected ? '#fff' : (isHovered ? theme.accentColor : undefined)
+                          }}
+                      >
+                        {lang}
+                      </button>
+                      )}) : (
+                      <p className="text-center py-4 text-xs text-slate-400 font-medium">No language found 🔍</p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <button 
+            onClick={() => setDarkMode(!darkMode)}
+            className={`p-3 rounded-2xl transition-all ${darkMode ? 'bg-slate-900 text-yellow-400 border border-slate-800' : 'bg-white text-slate-600 shadow-sm border-white'} border`}
+          >
+            {darkMode ? <Sun size={18} fill="currentColor" /> : <Moon size={18} fill="currentColor" />}
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -345,19 +469,21 @@ const App = () => {
         />
       </motion.div>
       {/* Footer Tag */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="mt-12 text-center"
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1 }}
+        className="mt-12 text-center"
+      >
+        <div
+          className={`inline-flex items-center gap-3 px-6 py-2.5 rounded-full backdrop-blur-xl border ${darkMode ? "bg-white/5 border-white/10 text-slate-600" : "bg-slate-200/50 border-slate-300/50 text-slate-400"}`}
         >
-          <div className={`inline-flex items-center gap-3 px-6 py-2.5 rounded-full backdrop-blur-xl border ${darkMode ? 'bg-white/5 border-white/10 text-slate-600' : 'bg-slate-200/50 border-slate-300/50 text-slate-400'}`}>
-            <p className="md:text-[11px] text-[8px] font-black uppercase tracking-[0.25em]">
-               Built with ❤️ for your's loved ones.
-          <br />© 2026 CupidAI. All rights reserved.
-            </p>
-          </div>
-        </motion.div>
+          <p className="md:text-[11px] text-[8px] font-black uppercase tracking-[0.25em]">
+            Built with ❤️ for your's loved ones.
+            <br />© 2026 CupidAI. All rights reserved.
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
 };
